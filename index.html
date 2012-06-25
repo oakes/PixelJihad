@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <title>PixelJihad</title>
+    <link href='main.css' type='text/css' rel='stylesheet'></link>
+    <script src='sjcl.js' type='text/javascript'></script>
+    <script src='main.js' type='text/javascript'></script>
+</head>
+<body>
+    <h1>PixelJihad</h1>
+    <div id='about' class='section'>
+        A <a href='http://en.wikipedia.org/wiki/Steganography'>steganography</a>
+         tool in pure HTML5 by <a href='https://github.com/oakes'>Zach Oakes</a>.
+        <br/> Works in the latest Firefox and Opera.</br>
+        Hiding a message doesn't work in Chrome due to 
+        <a href='http://code.google.com/p/chromium/issues/detail?id=97108'>this 
+        bug</a>.
+    </div>
+    <div id='main' class='section dark'>
+        <div class='step'>Choose an image</div>
+        <img id='preview' class='preview hide' />
+        <div class='sectionbody'>
+            <input type='file' id='file' />
+        </div>
+    </div>
+    <div id='choose' class='section dark hide'>
+        <div class='step'>What do you want to do?</div>
+        <div class='sectionbody'>
+            <div class='left'>
+                <label for='message'>Type hidden message:</label>
+                <textarea id='message' class='message' maxlength='1000'
+                    placeholder='Type hidden message'></textarea>
+                <label for='password'>Password:</label>
+                <input type='password' id='password' class='password'
+                    placeholder='Password (optional)' />
+                <button id='encode' class='submit'>Hide message</button>
+            </div>
+            <div class='right'>
+                <label for='password2'>Password:</label>
+                <input type='password' id='password2' class='password'
+                    placeholder='Password' />
+                <button id='decode' class='submit'>Reveal message</button>
+            </div>
+        </div>
+    </div>
+    <div id='reveal' class='section dark hide'>
+        <div class='step'>Hidden message</div>
+        <div id='messageDecoded' class='sectionbody'></div>
+    </div>
+    <canvas id='canvas' class='hide'></canvas>
+</body>
+</html>
