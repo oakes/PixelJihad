@@ -21,8 +21,8 @@ window.onload = function() {
     }
 };
 
-// this will store the canvas object
-var canvas = null;
+// artificially limit the message size
+var maxMessageSize = 1000;
 
 // put image in the canvas and display it
 var importImage = function(e) {
@@ -32,8 +32,7 @@ var importImage = function(e) {
         var img = new Image();
 
         img.onload = function() {
-            canvas = document.getElementById('canvas');
-            var ctx = canvas.getContext('2d');
+            var ctx = document.getElementById('canvas').getContext('2d');
             ctx.canvas.width = img.width;
             ctx.canvas.height = img.height;
             ctx.drawImage(img, 0, 0);
@@ -55,7 +54,7 @@ var decode = function() {
     var passwordFail = 'Password is incorrect or there is nothing here.';
 
     // decode the message with the supplied password
-    var ctx = canvas.getContext('2d');
+    var ctx = document.getElementById('canvas').getContext('2d');
     var imgData = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height);
     var message = decodeMessage(imgData.data, sjcl.hash.sha256.hash(password));
 
@@ -96,6 +95,8 @@ var decode = function() {
 var encode = function() {
     var message = document.getElementById('message').value;
     var password = document.getElementById('password').value;
+    var canvas = document.getElementById('canvas');
+    var ctx = canvas.getContext('2d');
 
     // encrypt the message with supplied password if necessary
     if (password.length > 0) {
@@ -104,9 +105,20 @@ var encode = function() {
         message = JSON.stringify({'text': message});
     }
 
+    // exit early if the message is too big for the image
+    var pixelCount = ctx.canvas.width * ctx.canvas.height;
+    if ((message.length + 1) * 16 > pixelCount * 4 * 0.75) {
+        alert('Message is too big for the image.');
+        return;
+    }
+
+    // exit early if the message is above an artificial limit
+    if (message.length > maxMessageSize) {
+        alert('Message is too big...it may lock up your browser.');
+        return;
+    }
+
     // encode the encrypted message with the supplied password
-    var canvas = document.getElementById('canvas');
-    var ctx = canvas.getContext('2d');
     var imgData = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height);
     encodeMessage(imgData.data, sjcl.hash.sha256.hash(password), message);
     ctx.putImageData(imgData, 0, 0);
@@ -215,8 +227,13 @@ var decodeMessage = function(colors, hash) {
     // get the message size
     var messageSize = getNumberFromBits(colors, history, hash);
 
-    // exit early if the message size in bits is more than the available colors
-    if (messageSize === 0 || messageSize > 1000) {
+    // exit early if the message is too big for the image
+    if ((messageSize + 1) * 16 > colors.length * 4 * 0.75) {
+        return '';
+    }
+
+    // exit early if the message is above an artificial limit
+    if (messageSize === 0 || messageSize > maxMessageSize) {
         return '';
     }
 
