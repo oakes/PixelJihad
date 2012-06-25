@@ -228,7 +228,7 @@ var decodeMessage = function(colors, hash) {
     var messageSize = getNumberFromBits(colors, history, hash);
 
     // exit early if the message is too big for the image
-    if ((messageSize + 1) * 16 > colors.length * 4 * 0.75) {
+    if ((messageSize + 1) * 16 > colors.length * 0.75) {
         return '';
     }
 
