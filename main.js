@@ -29,8 +29,17 @@ var importImage = function(e) {
     var reader = new FileReader();
 
     reader.onload = function(event) {
-        var img = new Image();
+        // set the preview
+        document.getElementById('preview').style.display = 'block';
+        document.getElementById('preview').src = event.target.result;
 
+        // wipe all the fields clean
+        document.getElementById('message').value = '';
+        document.getElementById('password').value = '';
+        document.getElementById('password2').value = '';
+
+        // read the data into the canvas element
+        var img = new Image();
         img.onload = function() {
             var ctx = document.getElementById('canvas').getContext('2d');
             ctx.canvas.width = img.width;
@@ -39,56 +48,10 @@ var importImage = function(e) {
 
             decode();
         };
-
         img.src = event.target.result;
-        document.getElementById('preview').style.display = 'block';
-        document.getElementById('preview').src = event.target.result;
     };
 
     reader.readAsDataURL(e.target.files[0]);
-};
-
-// decode the image and display the contents if there is anything
-var decode = function() {
-    var password = document.getElementById('password2').value;
-    var passwordFail = 'Password is incorrect or there is nothing here.';
-
-    // decode the message with the supplied password
-    var ctx = document.getElementById('canvas').getContext('2d');
-    var imgData = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height);
-    var message = decodeMessage(imgData.data, sjcl.hash.sha256.hash(password));
-
-    // try to parse the JSON
-    try {
-        message = JSON.parse(message);
-    } catch (e) {
-        message = null;
-    }
-
-    // display the appropriate view
-    if (!message) {
-        document.getElementById('choose').style.display = 'block';
-        document.getElementById('messageDecoded').innerHTML = '';
-        document.getElementById('reveal').style.display = 'none';
-
-        if (password.length > 0) {
-            alert(passwordFail);
-        }
-    } else {
-        document.getElementById('choose').style.display = 'none';
-        document.getElementById('reveal').style.display = 'block';
-
-        if (message.ct) {
-            try {
-                message.text = sjcl.decrypt(password, JSON.stringify(message));
-            } catch (e) {
-                alert(passwordFail);
-            }
-        }
-        document.getElementById('messageDecoded').innerHTML = message.text;
-    }
-
-    document.getElementById('password2').value = '';
 };
 
 // encode the image and save it
@@ -125,6 +88,48 @@ var encode = function() {
 
     // view the new image
     window.location = canvas.toDataURL();
+};
+
+// decode the image and display the contents if there is anything
+var decode = function() {
+    var password = document.getElementById('password2').value;
+    var passwordFail = 'Password is incorrect or there is nothing here.';
+
+    // decode the message with the supplied password
+    var ctx = document.getElementById('canvas').getContext('2d');
+    var imgData = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height);
+    var message = decodeMessage(imgData.data, sjcl.hash.sha256.hash(password));
+
+    // try to parse the JSON
+    var obj = null;
+    try {
+        obj = JSON.parse(message);
+    } catch (e) {
+        // display the "choose" view
+
+        document.getElementById('choose').style.display = 'block';
+        document.getElementById('messageDecoded').innerHTML = '';
+        document.getElementById('reveal').style.display = 'none';
+
+        if (password.length > 0) {
+            alert(passwordFail);
+        }
+    }
+
+    // display the "reveal" view
+    if (obj) {
+        document.getElementById('choose').style.display = 'none';
+        document.getElementById('reveal').style.display = 'block';
+
+        if (obj.ct) {
+            try {
+                obj.text = sjcl.decrypt(password, message);
+            } catch (e) {
+                alert(passwordFail);
+            }
+        }
+        document.getElementById('messageDecoded').innerHTML = obj.text;
+    }
 };
 
 // returns a 1 or 0 for the bit in 'location'
@@ -197,12 +202,7 @@ var encodeMessage = function(colors, hash, message) {
 
     // encode the bits into the pixels
     var pos = 0;
-    while (true) {
-        // stop encoding when we're done
-        if (pos == messageBits.length) {
-            break;
-        }
-
+    while (pos < messageBits.length) {
         // set the next color value to the next bit
         var loc = getNextLocation(history, hash, colors.length);
         colors[loc] = setBit(colors[loc], 0, messageBits[pos]);

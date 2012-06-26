@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <title>Steganography in JavaScript</title>
+    <link href='main.css' type='text/css' rel='stylesheet'></link>
+</head>
+<body>
+    <a href="https://github.com/oakes/PixelJihad">
+    <img style="position: absolute; top: 0; right: 0; border: 0;"
+    src="https://s3.amazonaws.com/github/ribbons/forkme_right_gray_6d6d6d.png"
+    alt="Fork me on GitHub"></a>
+
+    <div class='section'>
+        <h1>Steganography in JavaScript</h1>
+        <h4>by Zach Oakes on June 25th, 2012</h4>
+        (<a href='index.html'>See it in action</a>)
+    </div>
+
+    <div class='section'>
+        <div class='step'>Overview</div>
+        <div class='sectionbody'>
+            <p>Image steganography is an effective way to exchange hidden 
+            messages without raising suspicion. It works by encoding the 
+            message into the color values of the image's pixels.</p>
+            <p>With recent browser features like the File API 
+            and Canvas, we can implement this technique in a browser without 
+            any server-side code at all.</p>
+        </div>
+    </div>
+
+    <div class='section'>
+        <div class='step'>Step 1: Load the image</div>
+        <div class='sectionbody'>
+            <p>Doing this in the past used to require uploading the image to a 
+            server, but with the <code>FileReader</code> class we can now 
+            object we can now load the image into the DOM without any round 
+            trip to the server. For a tool focused on privacy, this is huge.</p>
+            <code>
+                var reader = new FileReader();<br/>
+                reader.onload = function(event) {<br/>
+                &nbsp;&nbsp;var dataUrl = event.target.result;<br/>
+                &nbsp;&nbsp;// ...<br/>
+                };<br/>
+                reader.readAsDataURL(e.target.files[0]);
+            </code>
+            <p>With our nifty data URL we can now load it into an 
+            <code>Image</code> object, which we'll then feed into our 
+            <code>canvas</code> element to do the pixel manipulation.</p>
+            <code>
+                var img = new Image();<br/>
+                img.onload = function() {<br/>
+                &nbsp;&nbsp;var canvas = document.getElementById('canvas');<br/>
+                &nbsp;&nbsp;var ctx = canvas.getContext('2d');<br/>
+                &nbsp;&nbsp;ctx.canvas.width = img.width;<br/>
+                &nbsp;&nbsp;ctx.canvas.height = img.height;<br/>
+                &nbsp;&nbsp;ctx.drawImage(img, 0, 0);<br/>
+                &nbsp;&nbsp;// ...<br/>
+                };<br/>
+                img.src = dataUrl;
+            </code>
+        </div>
+    </div>
+
+    <div class='section'>
+        <div class='step'>Step 2 (if encoding): Prepare the message</div>
+        <div class='sectionbody'>
+            <p>For extra security, it's good to provide the option of 
+            encrypting the message before hiding it in the image. To do this, 
+            we'll use the <a href='crypto.stanford.edu/sjcl/'>SJCL</a> 
+            library. Its <code>encrypt</code> function uses reasonable defaults 
+            (AES-128 in CCM mode and PBKDF2 with 1000 iterations).</p>
+            <code>
+                if (password.length > 0) {<br/>
+                &nbsp;&nbsp;message = sjcl.encrypt(password, message);<br/>
+                } else {<br/>
+                &nbsp;&nbsp;message = JSON.stringify({'text': message});<br/>
+                }
+            </code>
+            <p>To encode the message, we'll need to break it up into its 
+            constituent 1s and 0s. We do this by getting the numerical value 
+            of each letter in the message using <code>charCodeAt</code>. This 
+            returns a 2-byte unicode value, which we can then do bitwise 
+            operations to get the individual bits.</p>
+            <code>
+                var getBit = function(number, location) {<br/>
+            &nbsp;&nbsp;return ((number >> location) & 1);<br/>
+                };<br/>
+                <br/>
+                var getBitsFromNumber = function(number) {<br/>
+                &nbsp;&nbsp;var bits = [];<br/>
+                &nbsp;&nbsp;for (var i = 0; i < 16; i++) {<br/>
+                &nbsp;&nbsp;&nbsp;&nbsp;bits.push(getBit(number, i));<br/>
+                &nbsp;&nbsp;}<br/>
+                &nbsp;&nbsp;return bits;<br/>
+                };<br/>
+                <br/>
+                var messageBits = [];<br/>
+                for (var i = 0; i < message.length; i++) {<br/>
+                &nbsp;&nbsp;var code = message.charCodeAt(i);<br/>
+                &nbsp;&nbsp;var bits = getBitsFromNumber(code);<br/>
+                &nbsp;&nbsp;messageBits = messageBits.concat(bits);<br/>
+                }
+            </code>
+        </div>
+    </div>
+
+    <div class='section'>
+        <div class='step'>Step 3 (if encoding): Encode the message</div>
+        <div class='sectionbody'>
+            <p>The <code>canvas</code> element makes it very easy to retrieve 
+            the pixels of an image.</p>
+            <code>
+                var imgData = ctx.getImageData(0, 0, width, height);<br/>
+                var colors = imgData.data;
+            </code>
+            <p>We end up with an array called <code>colors</code>. 
+            It contains each of the four color values from each pixel 
+            (red, green, blue, alpha). So, <code>colors[0]</code> is the red 
+            color value of the first pixel, and <code>colors[4]</code> is the 
+            red color value of the second pixel.</p>
+            <p>The easiest approach to encoding is to start at the top left 
+            pixel and encode the message linearly. This, however, will make it 
+            easier to detect, both programatically and with the naked eye.</p>
+            <p>Instead, we'll use a simple technique to scatter the message to 
+            seemingly random pixels. We'll hash the user's password (or a blank  
+            string) to get "random" locations from <code>colors</code>.</p>
+            <code>
+                var hash = sjcl.hash.sha256.hash(password);</br>
+                var pos = 0;<br/>
+                while (pos < messageBits.length) {<br/>
+                &nbsp;&nbsp;var rand = hash[pos % hash.length] * (pos + 1);<br/>
+                &nbsp;&nbsp;var loc = Math.abs(rand) % colors.length;<br/>
+                &nbsp;&nbsp;// ...<br/>
+                &nbsp;&nbsp;pos++;<br/>
+                }
+            </code>
+            <p>With the location in hand, we can use bitwise operations to 
+            set the 0th bit (the least significant bit) to a bit from the 
+            message.</p>
+            <code>
+                var setBit = function(number, location, bit) {<br/>
+        &nbsp;&nbsp;return (number & ~(1 << location)) | (bit << location);<br/>
+                };<br/>
+                // ...<br/>
+                colors[loc] = setBit(colors[loc], 0, messageBits[pos]);
+            </code>
+        </div>
+    </div>
+
+    <div class='section'>
+        <div class='step'>Step 2 (if decoding): Get the message</div>
+        <div class='sectionbody'>
+            <p>To decode, we use the same scattering code we wrote above. One 
+            obvious problem is that, unlike during encoding, we don't know 
+            when to stop!</p>
+            <p>The solution, which wasn't mentioned above for 
+            simplicity, is to encode the message length before the message 
+            itself. We encoded it as a 2-byte number (16 bits).</p>
+            <code>
+                var hash = sjcl.hash.sha256.hash(password);</br>
+                var messageSize = 0, pos = 0;<br/>
+                while (pos < 16) {<br/>
+                &nbsp;&nbsp;// use the same code as above to get "loc"<br/>
+                &nbsp;&nbsp;// ...<br/>
+                &nbsp;&nbsp;var bit = getBit(bytes[loc], 0);<br/>
+                &nbsp;&nbsp;messageSize = setBit(messageSize, pos, bit);<br/>
+                &nbsp;&nbsp;pos++;<br/>
+                }<br/>
+            </code>
+            <p>The same exact code can now be used to retrieve each individual 
+            character of the message.</p>
+        </div>
+    </div>
+
+    <div class='section'>
+        <div class='step'>Step 3 (if decoding): Parse the message</div>
+        <div class='sectionbody'>
+            <p>As you may have noticed above, we encoded the message as JSON. 
+            This allowed us to include all the various bits of information 
+            necessary for decrypting (like the salt and iteration count).</p>
+            <p>With our message in hand, we merely need to parse it and, if 
+            necessary, decrypt it. With luck, we'll have the original plain 
+            text in all its glory.</p>
+            <code>
+                var obj = null;<br/>
+                try {<br/>
+                &nbsp;&nbsp;obj = JSON.parse(message);<br/>
+                } catch (e) {<br/>
+                &nbsp;&nbsp;// message is invalid<br/>
+                }<br/>
+                if (obj) {<br/>
+                &nbsp;&nbsp;// decrypt if necessary, then display the text!<br/>
+                }
+            </code>
+        </div>
+    </div>
+
+    <div class='section'>
+        <div class='step'>One minor nit in all this...</div>
+        <div class='sectionbody'>
+            <p>Most, if not all, <code>canvas</code> implementations use a 
+            process called <a href='http://stackoverflow.com/q/4309364'>
+            premultiplied alpha</a>. This means that after setting the pixels, 
+            the browser will actually modify the red, green, and blue values 
+            to reflect the alpha value. This lets them render it faster.</p>
+            <p>Unfortunately, this is not good for steganography, because it 
+            destroys the information we inserted. We can't "reverse" the 
+            calculation, because there's a lot of rounding going on.</p>
+            <p>The solution, I found, is to make sure the pixels I store data 
+            in have no transparency. I do this by setting the alpha value to 
+            255. This protects the other three color values from being 
+            modified.</p>
+            <p>Of course, this means I can't store anything in the alpha 
+            portion of a pixel, so I have 25% less space to store in a given 
+            image. While unfortunate, it's a price I'm willing to pay for the 
+            convenience of browser-based steganography.</p>
+        </div>
+    </div>
+</body>
+</html>

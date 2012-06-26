@@ -5,12 +5,16 @@ body {
 
 body, textarea, input {
     font-family: Helvetica, Arial;
-    color: gray;
+    color: dimgray;
     border: none;
 }
 
 a {
-    color: gray;
+    color: dimgray;
+}
+
+p {
+    text-indent: 1.5em;
 }
 
 .section {
@@ -25,7 +29,7 @@ a {
     background-color: lightgray;
     border-style: solid;
     border-width: 1px;
-    border-color: gray;
+    border-color: dimgray;
 }
 
 .sectionbody {
@@ -38,7 +42,7 @@ a {
     position: absolute;
     margin-top: -50px;
     margin-left: -50px;
-    background-color: gray;
+    background-color: dimgray;
     color: lightgray;
     padding: 20px;
     font-size: 20px;
