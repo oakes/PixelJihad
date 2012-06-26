@@ -122,6 +122,7 @@ var decode = function() {
         document.getElementById('choose').style.display = 'none';
         document.getElementById('reveal').style.display = 'block';
 
+        // decrypt if necessary
         if (obj.ct) {
             try {
                 obj.text = sjcl.decrypt(password, message);
@@ -130,7 +131,22 @@ var decode = function() {
             }
         }
 
-        document.getElementById('messageDecoded').innerHTML = obj.text;
+        // escape special characters
+        var escChars = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            '\'': '&#39;',
+            '/': '&#x2F;',
+            '\n': '<br/>'
+        };
+        var escHtml = function(string) {
+            return String(string).replace(/[&<>"'\/\n]/g, function (c) {
+                return escChars[c];
+            });
+        };
+        document.getElementById('messageDecoded').innerHTML = escHtml(obj.text);
     }
 };
 
