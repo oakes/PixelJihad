@@ -29,6 +29,11 @@ p {
     .section {
         width: 70%;
     }
+
+    /* so the 'fork me on github' ribbon doesn't overlap the text */
+    h1 {
+        margin-bottom: 60px;
+    }
 }
 
 .dark {
@@ -85,4 +90,8 @@ p {
 
 .hide {
     display: none;
+}
+
+#about {
+    z-index: 1000;
 }
