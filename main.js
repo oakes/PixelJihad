@@ -37,6 +37,7 @@ var importImage = function(e) {
         document.getElementById('message').value = '';
         document.getElementById('password').value = '';
         document.getElementById('password2').value = '';
+        document.getElementById('messageDecoded').innerHTML = '';
 
         // read the data into the canvas element
         var img = new Image();
@@ -87,6 +88,7 @@ var encode = function() {
     ctx.putImageData(imgData, 0, 0);
 
     // view the new image
+    alert('Done! When the image appears, save and share it with someone.');
     window.location = canvas.toDataURL();
 };
 
@@ -108,7 +110,6 @@ var decode = function() {
         // display the "choose" view
 
         document.getElementById('choose').style.display = 'block';
-        document.getElementById('messageDecoded').innerHTML = '';
         document.getElementById('reveal').style.display = 'none';
 
         if (password.length > 0) {
@@ -128,6 +129,7 @@ var decode = function() {
                 alert(passwordFail);
             }
         }
+
         document.getElementById('messageDecoded').innerHTML = obj.text;
     }
 };
