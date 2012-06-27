@@ -91,7 +91,3 @@ p {
 .hide {
     display: none;
 }
-
-#about {
-    z-index: 1000;
-}

@@ -68,7 +68,7 @@
         <div class='sectionbody'>
             <p>For extra security, it's good to provide the option of 
             encrypting the message before hiding it in the image. To do this, 
-            we'll use the <a href='crypto.stanford.edu/sjcl/'>SJCL</a> 
+            we'll use the <a href='http://crypto.stanford.edu/sjcl/'>SJCL</a> 
             library. Its <code>encrypt</code> function uses reasonable defaults 
             (AES-128 in CCM mode and PBKDF2 with 1000 iterations).</p>
             <code>
@@ -81,7 +81,7 @@
             <p>To encode the message, we'll need to break it up into its 
             constituent 1s and 0s. We do this by getting the numerical value 
             of each letter in the message using <code>charCodeAt</code>. This 
-            returns a 2-byte unicode value, which we can then do bitwise 
+            returns a 2-byte unicode value, and we can then do bitwise 
             operations to get the individual bits.</p>
             <code>
                 var getBit = function(number, location) {<br/>

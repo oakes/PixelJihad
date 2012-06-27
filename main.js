@@ -11,18 +11,10 @@ window.onload = function() {
     // add action to the decode button
     var decodeButton = document.getElementById('decode');
     decodeButton.addEventListener('click', decode);
-
-    // hide labels if the browser supports placeholders
-    if (!document.createElement('input').placeholder) {
-        var labels = document.getElementsByTagName('label');
-        for (var i = 0; i < labels.length; i++) {
-            labels[i].style.display = 'none';
-        }
-    }
 };
 
 // artificially limit the message size
-var maxMessageSize = 1000;
+var maxMessageSize = 10000;
 
 // put image in the canvas and display it
 var importImage = function(e) {
@@ -78,7 +70,7 @@ var encode = function() {
 
     // exit early if the message is above an artificial limit
     if (message.length > maxMessageSize) {
-        alert('Message is too big...it may lock up your browser.');
+        alert('Message is too big.');
         return;
     }
 
