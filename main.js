@@ -14,7 +14,7 @@ window.onload = function() {
 };
 
 // artificially limit the message size
-var maxMessageSize = 10000;
+var maxMessageSize = 1000;
 
 // put image in the canvas and display it
 var importImage = function(e) {
