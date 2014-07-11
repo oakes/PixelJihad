@@ -51,6 +51,7 @@ var importImage = function(e) {
 var encode = function() {
     var message = document.getElementById('message').value;
     var password = document.getElementById('password').value;
+    var output = document.getElementById('output');
     var canvas = document.getElementById('canvas');
     var ctx = canvas.getContext('2d');
 
@@ -81,7 +82,9 @@ var encode = function() {
 
     // view the new image
     alert('Done! When the image appears, save and share it with someone.');
-    window.location = canvas.toDataURL();
+
+    output.src = canvas.toDataURL();
+
 };
 
 // decode the image and display the contents if there is anything
